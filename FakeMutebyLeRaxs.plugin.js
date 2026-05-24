@@ -2,7 +2,7 @@
  * @name แอบฟังอยู่นะจ้ะ
  * @author LeRaxs
  * @authorLink https://github.com/leraxs001
- * @version 1.0.0
+ * @version 1.0.1
  * @description ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่
  * @website https://github.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/
  * @source https://github.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/blob/main/FakeMutebyLeRaxs.plugin.js
@@ -16,6 +16,7 @@ module.exports = class FakeMuteByLeRaxs {
         this.observer = null;
         this.retryCount = 0;
         this.maxRetries = 10;
+        this._voiceStateUnsubscribe = null;
 
         this.settings = {
             accountButton: true,
@@ -26,24 +27,30 @@ module.exports = class FakeMuteByLeRaxs {
     getName() { return 'แอบฟังอยู่นะจ้ะ by LeRaxs'; }
     getAuthor() { return 'LeRaxs'; }
     getDescription() { return "ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่"; }
-    getVersion() { return "1.0.0"; }
+    getVersion() { return "1.0.1"; }
 
     load() {}
 
     start() {
         this.injectCSS();
         this.patchWebSocket();
-        // accountButton: ตรวจสอบก่อนสร้างปุ่มครั้งแรก
         if (this.settings.accountButton) {
             this.tryDOMMethod();
         }
         this.setupDOMObserver();
         this.patchContextMenu();
+        this.patchVoiceStateStore(); // ✅ ตรวจจับการออกห้องเสียง
         console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: เริ่มทำงานแล้ว');
     }
 
     stop() {
         this.unpatchWebSocket();
+
+        // ✅ Unsubscribe voice state listener
+        if (this._voiceStateUnsubscribe) {
+            this._voiceStateUnsubscribe();
+            this._voiceStateUnsubscribe = null;
+        }
 
         if (this.domButton && this.domButton.parentElement) {
             this.domButton.parentElement.removeChild(this.domButton);
@@ -60,6 +67,43 @@ module.exports = class FakeMuteByLeRaxs {
 
         this.clearCSS();
         console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: หยุดทำงานแล้ว');
+    }
+
+    // ✅ ฟังก์ชันใหม่: ตรวจจับเมื่อผู้ใช้ออกจากห้องเสียง
+    patchVoiceStateStore() {
+        try {
+            const VoiceStateStore = BdApi.Webpack.getStore("VoiceStateStore");
+            const UserStore = BdApi.Webpack.getStore("UserStore");
+            if (!VoiceStateStore || !UserStore) {
+                console.warn('แอบฟังอยู่นะจ้ะ by LeRaxs: ไม่พบ VoiceStateStore หรือ UserStore');
+                return;
+            }
+
+            this._voiceStateUnsubscribe = VoiceStateStore.addChangeListener(() => {
+                try {
+                    const user = UserStore.getCurrentUser();
+                    if (!user) return;
+
+                    const state = VoiceStateStore.getVoiceStateForUser(user.id);
+                    const inVoice = state && state.channelId;
+
+                    // ออกห้องแล้ว แต่ fakeMute ยังเปิดอยู่ → reset อัตโนมัติ
+                    if (!inVoice && this.fixated) {
+                        this.fixated = false;
+                        this.disableFakeMute();
+                        this.updateDOMButton();
+                        this.showToast('ออกห้องเสียงแล้ว Fake Mute ถูกปิดอัตโนมัติ', 'warning');
+                        console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: ปิด Fake Mute อัตโนมัติเพราะออกห้องเสียง');
+                    }
+                } catch (e) {
+                    console.error('แอบฟังอยู่นะจ้ะ by LeRaxs: เกิดข้อผิดพลาดใน VoiceState listener', e);
+                }
+            });
+
+            console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: ลงทะเบียน VoiceState listener แล้ว');
+        } catch (e) {
+            console.error('แอบฟังอยู่นะจ้ะ by LeRaxs: ไม่สามารถ patch VoiceStateStore ได้', e);
+        }
     }
 
     injectCSS() {
@@ -108,7 +152,6 @@ module.exports = class FakeMuteByLeRaxs {
     setupDOMObserver() {
         this.observer = new MutationObserver(() => {
             if (!this.domButton || !document.contains(this.domButton)) {
-                // domFallback และ accountButton ต้องเปิดอยู่ทั้งคู่ถึงจะ re-inject
                 if (this.settings.domFallback && this.settings.accountButton) {
                     setTimeout(() => this.tryDOMMethod(), 500);
                 }
@@ -126,7 +169,6 @@ module.exports = class FakeMuteByLeRaxs {
     }
 
     tryDOMMethod() {
-        // domFallback: ถ้าปิดอยู่ ไม่ re-inject เมื่อปุ่มหาย (แต่ยังสร้างครั้งแรกได้)
         if (this.domButton && document.contains(this.domButton)) return;
 
         const container = this.findButtonContainer();
