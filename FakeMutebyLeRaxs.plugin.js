@@ -2,8 +2,8 @@
  * @name แอบฟังอยู่นะจ้ะ
  * @author LeRaxs
  * @authorLink https://github.com/leraxs001
- * @version 1.0.0
- * @description ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่
+ * @version 1.0.1
+ * @description ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่ (กด Alt+C เพื่อเปิด/ปิด)
  * @website https://github.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/
  * @source https://github.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/blob/main/FakeMutebyLeRaxs.plugin.js
  * @updateUrl https://raw.githubusercontent.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/main/FakeMutebyLeRaxs.plugin.js
@@ -21,25 +21,28 @@ module.exports = class FakeMuteByLeRaxs {
             accountButton: true,
             domFallback: true
         };
+
+        // bind เพื่อให้ลบ event listener ได้ถูกต้องตอน stop()
+        this._keydownHandler = this._onKeyDown.bind(this);
     }
 
     getName() { return 'แอบฟังอยู่นะจ้ะ by LeRaxs'; }
     getAuthor() { return 'LeRaxs'; }
-    getDescription() { return "ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่"; }
-    getVersion() { return "1.0.0"; }
+    getDescription() { return "ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่ (Alt+C เพื่อเปิด/ปิด)"; }
+    getVersion() { return "1.0.1"; }
 
     load() {}
 
     start() {
         this.injectCSS();
         this.patchWebSocket();
-        // accountButton: ตรวจสอบก่อนสร้างปุ่มครั้งแรก
         if (this.settings.accountButton) {
             this.tryDOMMethod();
         }
         this.setupDOMObserver();
         this.patchContextMenu();
-        console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: เริ่มทำงานแล้ว');
+        this.registerKeyboardShortcut();
+        console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: เริ่มทำงานแล้ว (Alt+C เพื่อเปิด/ปิด)');
     }
 
     stop() {
@@ -58,9 +61,31 @@ module.exports = class FakeMuteByLeRaxs {
             this.contextMenuPatch();
         }
 
+        this.unregisterKeyboardShortcut();
         this.clearCSS();
         console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: หยุดทำงานแล้ว');
     }
+
+    // ── Keyboard Shortcut ──────────────────────────────────────────────────────
+
+    registerKeyboardShortcut() {
+        document.addEventListener('keydown', this._keydownHandler, true);
+    }
+
+    unregisterKeyboardShortcut() {
+        document.removeEventListener('keydown', this._keydownHandler, true);
+    }
+
+    _onKeyDown(e) {
+        // Alt + C (ไม่ต้องการ Ctrl หรือ Shift กดร่วม)
+        if (e.altKey && !e.ctrlKey && !e.shiftKey && !e.metaKey && e.code === 'KeyC') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.toggleFixate();
+        }
+    }
+
+    // ── CSS ───────────────────────────────────────────────────────────────────
 
     injectCSS() {
         const css = `
@@ -105,10 +130,11 @@ module.exports = class FakeMuteByLeRaxs {
         BdApi.DOM.removeStyle(this.getName());
     }
 
+    // ── DOM Observer ──────────────────────────────────────────────────────────
+
     setupDOMObserver() {
         this.observer = new MutationObserver(() => {
             if (!this.domButton || !document.contains(this.domButton)) {
-                // domFallback และ accountButton ต้องเปิดอยู่ทั้งคู่ถึงจะ re-inject
                 if (this.settings.domFallback && this.settings.accountButton) {
                     setTimeout(() => this.tryDOMMethod(), 500);
                 }
@@ -126,7 +152,6 @@ module.exports = class FakeMuteByLeRaxs {
     }
 
     tryDOMMethod() {
-        // domFallback: ถ้าปิดอยู่ ไม่ re-inject เมื่อปุ่มหาย (แต่ยังสร้างครั้งแรกได้)
         if (this.domButton && document.contains(this.domButton)) return;
 
         const container = this.findButtonContainer();
@@ -156,8 +181,8 @@ module.exports = class FakeMuteByLeRaxs {
     createDOMButton() {
         const button = document.createElement('button');
         button.className = 'fake-mute-button-LeRaxs';
-        button.setAttribute('aria-label', `${this.fixated ? 'ปิด' : 'เปิด'} Fake Mute/Deafen`);
-        button.title = `${this.fixated ? 'ปิด' : 'เปิด'} Fake Mute/Deafen`;
+        button.setAttribute('aria-label', `${this.fixated ? 'ปิด' : 'เปิด'} Fake Mute/Deafen (Alt+C)`);
+        button.title = `${this.fixated ? 'ปิด' : 'เปิด'} Fake Mute/Deafen (Alt+C)`;
 
         if (this.fixated) button.classList.add('active');
 
@@ -184,14 +209,16 @@ module.exports = class FakeMuteByLeRaxs {
     updateDOMButton() {
         if (!this.domButton) return;
         this.domButton.innerHTML = this.getSVGIcon();
-        this.domButton.title = `${this.fixated ? 'ปิด' : 'เปิด'} Fake Mute/Deafen`;
-        this.domButton.setAttribute('aria-label', `${this.fixated ? 'ปิด' : 'เปิด'} Fake Mute/Deafen`);
+        this.domButton.title = `${this.fixated ? 'ปิด' : 'เปิด'} Fake Mute/Deafen (Alt+C)`;
+        this.domButton.setAttribute('aria-label', `${this.fixated ? 'ปิด' : 'เปิด'} Fake Mute/Deafen (Alt+C)`);
         if (this.fixated) {
             this.domButton.classList.add('active');
         } else {
             this.domButton.classList.remove('active');
         }
     }
+
+    // ── Context Menu ──────────────────────────────────────────────────────────
 
     patchContextMenu() {
         this.contextMenuPatch = BdApi.ContextMenu.patch('audio-device-context', (tree) => {
@@ -201,7 +228,7 @@ module.exports = class FakeMuteByLeRaxs {
                     BdApi.ContextMenu.buildItem({ type: "separator" }),
                     BdApi.ContextMenu.buildItem({
                         type: "toggle",
-                        label: "Fake Mute/Deafen โดย LeRaxs",
+                        label: "Fake Mute/Deafen โดย LeRaxs (Alt+C)",
                         checked: this.fixated,
                         disabled: false,
                         action: () => this.toggleFixate()
@@ -219,6 +246,8 @@ module.exports = class FakeMuteByLeRaxs {
         }
         return null;
     }
+
+    // ── Voice State ───────────────────────────────────────────────────────────
 
     getVoiceState() {
         try {
@@ -255,6 +284,8 @@ module.exports = class FakeMuteByLeRaxs {
         return null;
     }
 
+    // ── Toggle ────────────────────────────────────────────────────────────────
+
     showToast(message, type = 'info') {
         BdApi.UI.showToast(`[แอบฟังอยู่นะจ้ะ] ${message}`, { type });
     }
@@ -279,6 +310,8 @@ module.exports = class FakeMuteByLeRaxs {
             this.fixated ? 'success' : 'error'
         );
     }
+
+    // ── WebSocket Patch ───────────────────────────────────────────────────────
 
     patchWebSocket() {
         if (!WebSocket.prototype.fakeMuteLeRaxsOriginal) {
