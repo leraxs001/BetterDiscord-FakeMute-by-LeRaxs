@@ -274,7 +274,10 @@ module.exports = class FakeMuteByLeRaxs {
             this.disableFakeMute();
         }
 
-        this.showToast(`Fake Mute/Deafen ${this.fixated ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว'}`, 'success');
+        this.showToast(
+            `Fake Mute/Deafen ${this.fixated ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว'}`,
+            this.fixated ? 'success' : 'error'
+        );
     }
 
     patchWebSocket() {
