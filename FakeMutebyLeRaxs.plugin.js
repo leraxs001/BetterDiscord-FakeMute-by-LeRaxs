@@ -1,10 +1,10 @@
 /**
  * @name แอบฟังอยู่นะจ้ะ
  * @author LeRaxs
- * @authorLink https://github.com/LeRaxs/FakeMute
+ * @authorLink https://github.com/leraxs001
  * @version 1.0.0
  * @description ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่
- * @website https://github.com/LeRaxs/FakeMute
+ * @website https://github.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/
  * @source https://github.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/blob/main/FakeMutebyLeRaxs.plugin.js
  * @updateUrl https://raw.githubusercontent.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/main/FakeMutebyLeRaxs.plugin.js
  */
