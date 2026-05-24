@@ -2,12 +2,11 @@
  * @name แอบฟังอยู่นะจ้ะ
  * @author LeRaxs
  * @authorLink https://github.com/LeRaxs/FakeMute
- * @invite M8DBtcZjXD
  * @version 1.0.0
- * @description Écouter ou même parler dans un chat vocal tout en étant auto-sourd.
+ * @description ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่
  * @website https://github.com/LeRaxs/FakeMute
  * @source https://github.com/LeRaxs/FakeMute/blob/main/FakeMute.plugin.js
- * @updateUrl https://raw.githubusercontent.com/LeRaxs/FakeMute/main/FakeMute.plugin.js
+ * @updateUrl https://raw.githubusercontent.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/main/FakeMutebyLeRaxs.plugin.js
  */
 
 module.exports = class FakeMuteByLeRaxs {
