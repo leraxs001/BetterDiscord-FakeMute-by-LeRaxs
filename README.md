@@ -15,7 +15,7 @@
 ## วิธีติดตั้ง
 
 1. ติดตั้ง [BetterDiscord](https://betterdiscord.app/) ก่อน
-2. ดาวน์โหลดไฟล์ `FakeMutebyLeRaxs.plugin.js`
+2. ดาวน์โหลดไฟล์ [`FakeMutebyLeRaxs.plugin.js`](https://github.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/blob/main/FakeMutebyLeRaxs.plugin.js)
 3. วางไฟล์ไว้ที่โฟลเดอร์ปลั๊กอินของ BetterDiscord
    - Windows: `%appdata%\BetterDiscord\plugins\`
    - Mac: `~/Library/Application Support/BetterDiscord/plugins/`
