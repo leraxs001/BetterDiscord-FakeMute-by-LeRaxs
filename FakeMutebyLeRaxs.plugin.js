@@ -17,6 +17,7 @@ module.exports = class FakeMuteByLeRaxs {
         this.retryCount = 0;
         this.maxRetries = 10;
 
+        // ฟีเจอร์ทั้งหมดเปิดตลอด ไม่มีหน้าตั้งค่า
         this.settings = {
             accountButton: true,
             sounds: true,
@@ -37,10 +38,12 @@ module.exports = class FakeMuteByLeRaxs {
     load() {}
 
     start() {
-        this.loadSettings();
         this.injectCSS();
         this.patchWebSocket();
-        this.tryDOMMethod();
+        // accountButton: ตรวจสอบก่อนสร้างปุ่มครั้งแรก
+        if (this.settings.accountButton) {
+            this.tryDOMMethod();
+        }
         this.setupDOMObserver();
         this.patchContextMenu();
         console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: เริ่มทำงานแล้ว');
@@ -51,6 +54,7 @@ module.exports = class FakeMuteByLeRaxs {
 
         if (this.domButton && this.domButton.parentElement) {
             this.domButton.parentElement.removeChild(this.domButton);
+            this.domButton = null;
         }
 
         if (this.observer) {
@@ -63,17 +67,6 @@ module.exports = class FakeMuteByLeRaxs {
 
         this.clearCSS();
         console.log('แอบฟังอยู่นะจ้ะ by LeRaxs: หยุดทำงานแล้ว');
-    }
-
-    loadSettings() {
-        const saved = BdApi.Data.load(this.getName(), 'settings');
-        if (saved) {
-            this.settings = Object.assign(this.settings, saved);
-        }
-    }
-
-    saveSettings() {
-        BdApi.Data.save(this.getName(), 'settings', this.settings);
     }
 
     injectCSS() {
@@ -122,6 +115,7 @@ module.exports = class FakeMuteByLeRaxs {
     setupDOMObserver() {
         this.observer = new MutationObserver(() => {
             if (!this.domButton || !document.contains(this.domButton)) {
+                // domFallback และ accountButton ต้องเปิดอยู่ทั้งคู่ถึงจะ re-inject
                 if (this.settings.domFallback && this.settings.accountButton) {
                     setTimeout(() => this.tryDOMMethod(), 500);
                 }
@@ -139,6 +133,7 @@ module.exports = class FakeMuteByLeRaxs {
     }
 
     tryDOMMethod() {
+        // domFallback: ถ้าปิดอยู่ ไม่ re-inject เมื่อปุ่มหาย (แต่ยังสร้างครั้งแรกได้)
         if (this.domButton && document.contains(this.domButton)) return;
 
         const container = this.findButtonContainer();
@@ -268,9 +263,10 @@ module.exports = class FakeMuteByLeRaxs {
     }
 
     playSound(soundName) {
+        if (!this.settings.sounds) return;
         try {
-            const SoundModule = BdApi.Webpack.getByKeys("playSound");
-            if (SoundModule && this.settings.sounds) {
+            const SoundModule = BdApi.Webpack.getModule(m => m.playSound && m.createSound);
+            if (SoundModule?.playSound) {
                 SoundModule.playSound(soundName, 0.4);
             }
         } catch (e) {
@@ -333,72 +329,5 @@ module.exports = class FakeMuteByLeRaxs {
             WebSocket.prototype.send = WebSocket.prototype.fakeMuteLeRaxsOriginal;
             delete WebSocket.prototype.fakeMuteLeRaxsOriginal;
         }
-    }
-
-    getSettingsPanel() {
-        const panel = document.createElement('div');
-        panel.style.padding = '10px';
-
-        const createSetting = (id, name, note, value) => {
-            const container = document.createElement('div');
-            container.style.marginBottom = '20px';
-
-            const header = document.createElement('div');
-            header.style.display = 'flex';
-            header.style.alignItems = 'center';
-            header.style.marginBottom = '5px';
-
-            const label = document.createElement('label');
-            label.textContent = name;
-            label.style.flex = '1';
-            label.style.fontWeight = '500';
-
-            const toggle = document.createElement('input');
-            toggle.type = 'checkbox';
-            toggle.checked = value;
-            toggle.style.width = '40px';
-            toggle.style.height = '20px';
-
-            toggle.addEventListener('change', (e) => {
-                this.settings[id] = e.target.checked;
-                this.saveSettings();
-            });
-
-            header.appendChild(label);
-            header.appendChild(toggle);
-
-            const noteEl = document.createElement('div');
-            noteEl.textContent = note;
-            noteEl.style.color = 'var(--text-muted)';
-            noteEl.style.fontSize = '12px';
-
-            container.appendChild(header);
-            container.appendChild(noteEl);
-
-            return container;
-        };
-
-        panel.appendChild(createSetting(
-            'accountButton',
-            'แสดงปุ่มเปิด/ปิด',
-            'แสดงปุ่มข้างๆ ปุ่มตัดการเชื่อมต่อและลดเสียงรบกวน',
-            this.settings.accountButton
-        ));
-
-        panel.appendChild(createSetting(
-            'sounds',
-            'เสียงเปิด/ปิด',
-            'เล่นเสียงเมื่อเปิดหรือปิด Fake Mute/Deafen',
-            this.settings.sounds
-        ));
-
-        panel.appendChild(createSetting(
-            'domFallback',
-            'Fallback DOM',
-            'ใส่ปุ่มกลับเข้าไปใหม่ถ้า Discord ลบมันออก',
-            this.settings.domFallback
-        ));
-
-        return panel;
     }
 };
