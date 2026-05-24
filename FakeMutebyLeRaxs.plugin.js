@@ -5,7 +5,7 @@
  * @version 1.0.0
  * @description ฟังหรือพูดในห้องเสียงได้แม้จะแสดงว่าปิดเสียงอยู่
  * @website https://github.com/LeRaxs/FakeMute
- * @source https://github.com/LeRaxs/FakeMute/blob/main/FakeMute.plugin.js
+ * @source https://github.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/blob/main/FakeMutebyLeRaxs.plugin.js
  * @updateUrl https://raw.githubusercontent.com/leraxs001/BetterDiscord-FakeMute-by-LeRaxs/main/FakeMutebyLeRaxs.plugin.js
  */
 
