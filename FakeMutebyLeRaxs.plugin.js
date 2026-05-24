@@ -17,16 +17,9 @@ module.exports = class FakeMuteByLeRaxs {
         this.retryCount = 0;
         this.maxRetries = 10;
 
-        // ฟีเจอร์ทั้งหมดเปิดตลอด ไม่มีหน้าตั้งค่า
         this.settings = {
             accountButton: true,
-            sounds: true,
             domFallback: true
-        };
-
-        this.Sounds = {
-            ENABLE: 'ptt_start',
-            DISABLE: 'ptt_stop'
         };
     }
 
@@ -262,18 +255,6 @@ module.exports = class FakeMuteByLeRaxs {
         return null;
     }
 
-    playSound(soundName) {
-        if (!this.settings.sounds) return;
-        try {
-            const SoundModule = BdApi.Webpack.getModule(m => m.playSound && m.createSound);
-            if (SoundModule?.playSound) {
-                SoundModule.playSound(soundName, 0.4);
-            }
-        } catch (e) {
-            console.error('แอบฟังอยู่นะจ้ะ by LeRaxs: เกิดข้อผิดพลาด playSound', e);
-        }
-    }
-
     showToast(message, type = 'info') {
         BdApi.UI.showToast(`[แอบฟังอยู่นะจ้ะ] ${message}`, { type });
     }
@@ -285,7 +266,6 @@ module.exports = class FakeMuteByLeRaxs {
 
         this.fixated = status === null ? !this.fixated : status;
 
-        this.playSound(this.fixated ? this.Sounds.ENABLE : this.Sounds.DISABLE);
         this.updateDOMButton();
 
         if (this.fixated) {
